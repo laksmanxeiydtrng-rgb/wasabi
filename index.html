@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อร่อยไม่ซ้ำจำสูตรไม่ได้</title>
+
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f5f5f5;
+}
+
+/* ===== แถบเมนูด้านบน ===== */
+.navbar{
+    display:flex;
+    align-items:center;
+    background:#222;
+    padding:0 20px;
+}
+
+.navbar h1{
+    color:#ff9800;
+    margin-right:30px;
+    font-size:22px;
+}
+
+.navbar button{
+    background:none;
+    border:none;
+    color:white;
+    padding:15px 20px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.navbar button:hover{
+    background:#444;
+}
+
+/* ===== แบนเนอร์ ===== */
+.banner{
+    background-color:#4a2c1d;
+    background-image: linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.1)), url("xs.png");
+    background-size: cover;
+    background-position: center;
+    height:400px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:white;
+    text-shadow:2px 2px 5px black;
+}
+
+/* ===== เนื้อหาเมนู ===== */
+.content{
+    max-width:900px;
+    margin:30px auto;
+    background:white;
+    padding:25px;
+    border-radius:10px;
+}
+
+.menu-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap:15px;
+}
+
+.menu-item{
+    background:#fafafa;
+    border:1px solid #ddd;
+    padding:15px;
+    border-radius:8px;
+}
+
+.menu-item .img-wrap{
+    width:100%;
+    height:140px;
+    background:#eee;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:10px;
+    position:relative;
+    cursor:pointer;
+}
+
+.menu-item .img-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.menu-item .title{
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.edit-btn{
+    background:#ff9800;
+    border:none;
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* Modal */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+}
+
+.modal .box{
+    background:white;
+    padding:16px;
+    border-radius:8px;
+    max-width:420px;
+    width:100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <h1>อร่อยไม่ซ้ำจำสูตรไม่ได้</h1>
+    <button onclick="showMenu('curry')">แกง</button>
+    <button onclick="showMenu('noodle')">อาหารเส้น</button>
+    <button onclick="showMenu('drink')">เครื่องดื่ม</button>
+    <button onclick="showMenu('dessert')">ขนม</button>
+    <button onclick="showMenu('more')">เพิ่มเติม</button>
+</div>
+
+<div class="banner">
+    <h2>ร้านอาหารรสจัดจ้าน</h2>
+    <p>เลือกเมนูที่คุณชอบได้เลย</p>
+</div>
+
+<div class="content" id="content"></div>
+
+<!-- Modal -->
+<div id="imageModal" class="modal">
+    <div class="box">
+        <h3>เปลี่ยนรูปเมนู</h3>
+        <input id="imgFile" type="file" accept="image/*">
+        <br><br>
+        <input id="imgUrl" type="text" placeholder="หรือวางลิงก์รูปภาพ">
+        <br><br>
+        <button onclick="closeImageEditor()">ยกเลิก</button>
+        <button onclick="saveImage()">บันทึก</button>
+    </div>
+</div>
+
+<script>
+const menuData = {
+    curry: ["แกงเขียวหวานไก่","แกงแดงหมู","แกงป่า","พะแนงเนื้อ"],
+    noodle: ["ผัดไทย","ก๋วยเตี๋ยวต้มยำ","ผัดซีอิ๊ว","ราดหน้า"],
+    drink: ["ชาเย็น","กาแฟเย็น","น้ำมะนาว","น้ำอัดลม"],
+    dessert: ["ข้าวเหนียวมะม่วง","ลอดช่อง","บัวลอย","ไอศกรีม"]
+};
+
+let currentType = "curry";
+let currentEdit = null;
+
+function showMenu(type){
+    currentType = type;
+    renderMenu(type);
+}
+
+function renderMenu(type){
+    const content = document.getElementById("content");
+
+    if(type === "more"){
+        content.innerHTML = `
+            <h2>ติดต่อร้าน</h2>
+            <p>Facebook: facebook.com/yourpage</p>
+            <p>เบอร์: 012-345-6789</p>
+        `;
+        return;
+    }
+
+    const items = menuData[type];
+    let html = `<h2>เมนู</h2><div class="menu-grid">`;
+
+    items.forEach((name, idx)=>{
+        const key = `menuimg_${type}_${idx}`;
+        const saved = localStorage.getItem(key);
+        const img = saved ? `<img src="${saved}">` : `<div style="color:#999">ไม่มีรูป</div>`;
+
+        html += `
+            <div class="menu-item">
+                <div class="img-wrap" onclick="openImageEditor('${type}',${idx})">
+                    ${img}
+                </div>
+                <div class="title">${name}</div>
+                <button class="edit-btn" onclick="openImageEditor('${type}',${idx})">เปลี่ยนรูป</button>
+            </div>
+        `;
+    });
+
+    html += "</div>";
+    content.innerHTML = html;
+}
+
+function openImageEditor(type, idx){
+    currentEdit = {type, idx};
+    document.getElementById("imageModal").style.display = "flex";
+}
+
+function closeImageEditor(){
+    document.getElementById("imageModal").style.display = "none";
+}
+
+function saveImage(){
+    if(!currentEdit) return;
+
+    const {type, idx} = currentEdit;
+    const key = `menuimg_${type}_${idx}`;
+    const file = document.getElementById("imgFile").files[0];
+    const url = document.getElementById("imgUrl").value.trim();
+
+    if(url){
+        localStorage.setItem(key, url);
+        renderMenu(type);
+        closeImageEditor();
+        return;
+    }
+
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(e){
+            localStorage.setItem(key, e.target.result);
+            renderMenu(type);
+            closeImageEditor();
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+    renderMenu("curry");
+});
+</script>
+
+</body>
+</html>
